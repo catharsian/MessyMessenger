@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Messenger_Client"
         mc:Ignorable="d"
         ResizeMode="NoResize"
-        Title="Login or Register" Height="340" Width="280" >
+        Title="Login or Register" Height="340" Width="280" Style="{StaticResource mIRC_Font}">
     <Grid>
         <Grid.ColumnDefinitions>
             

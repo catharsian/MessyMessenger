@@ -6,10 +6,9 @@
         xmlns:local="clr-namespace:Messenger_Client"
         mc:Ignorable="d"
         Closed="CloseAll"
-        Title="Telegraph Messenger" Height="800" Width="450" MinHeight="800" MinWidth="450">
+        Title="Telegraph Messenger" Height="400" Width="400" MinHeight="400" MinWidth="400" Style="{StaticResource mIRC_Font}">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*"/>
             <ColumnDefinition Width="1*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
@@ -17,39 +16,12 @@
             <RowDefinition Height="8*" />
             <RowDefinition Height="1*" />
         </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" Grid.Column="1" Text="Users Online:" />
-        <Grid Grid.Row="0" Grid.Column="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="auto"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>    
-            <TextBlock Grid.Column="0" Text="You are currently chatting with: " />
-            <TextBox Grid.Column="1" Text="all" Name="chatWith" BorderBrush="{x:Null}" Background="{x:Null}"/>
-        </Grid>
-        <ListBox Grid.Row="1" Grid.Column="1" Name ="OnlineUsersList">
+        <TextBlock Grid.Row="0" Grid.Column="0" Name="TopTextBlock" FontSize="15" />
+        <ListBox Grid.Row="1" Grid.Column="0" Name ="OnlineUsersList" VerticalContentAlignment="Stretch" HorizontalContentAlignment="Stretch">
             
         </ListBox>
-
-        <ListBox Grid.Row="1" Grid.Column="0" Name="msgs">
-            
-        </ListBox>
-        
-        <TextBlock Grid.Row="2" Grid.Column="0" Name="Notify" Text="Type your message here." FontFamily="Comic Sans MS" FontSize="18">
-
-        </TextBlock>
-
-        <TextBox Name="TypedTxt" Grid.Row="2" Grid.Column="0" TextChanged="OnTxtBoxInput" Background="{x:Null}" FontFamily="Comic Sans MS" FontSize="18">
-
-        </TextBox>
-        
-        <Button Name="send" Click="sendMessage" Content="Send" Grid.Column="1" Grid.Row="2" BorderBrush="Red" Foreground="Black" Margin="2">
-            <Button.Background>
-                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
-                    <GradientStop Color="Black"/>
-                    <GradientStop Color="#FF95E645" Offset="1"/>
-                </LinearGradientBrush>
-            </Button.Background>
+        <Button Grid.Row="2" Name="Start_Chatting" Click="MakeChat">
+            Start Chatting
         </Button>
-
     </Grid>
 </Window>

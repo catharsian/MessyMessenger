@@ -26,7 +26,7 @@ namespace Messenger_Client
     }
     public class MesClient
     {
-        private Thread tcpThread;
+        public Thread tcpThread;
         private bool _conn = false;
         private bool _logged = false;
         private string _user;
@@ -69,7 +69,7 @@ namespace Messenger_Client
         public event MesAvailEventHandler UserAvailable;
         public event MesReceivedEventHandler MessageReceived;
         public event EventHandler GotUsersOnline;
-
+        public event EventHandler NoSuchHost;
         private List<string> _users;
         public  List<string> UsersOnline 
         {
@@ -139,23 +139,37 @@ namespace Messenger_Client
                 CloseConn();
             }
         }
-        private void InitStuff()
+        private bool InitStuff()
         {
             if (!_conn)
             {
-                _conn = true;
-                client = new TcpClient(Server, Port);
-                netStream = client.GetStream();
-                ssl = new SslStream(netStream, false, new RemoteCertificateValidationCallback(ValidateCert));
-                ssl.AuthenticateAsClient("Messenger Server");
-                br = new BinaryReader(ssl, Encoding.UTF8);
-                bw = new BinaryWriter(ssl, Encoding.UTF8);
+                try
+                {
+                    _conn = true;
+                    client = new TcpClient(Server, Port);
+                    netStream = client.GetStream();
+                    ssl = new SslStream(netStream, false, new RemoteCertificateValidationCallback(ValidateCert));
+                    ssl.AuthenticateAsClient("Messenger Server");
+                    br = new BinaryReader(ssl, Encoding.UTF8);
+                    bw = new BinaryWriter(ssl, Encoding.UTF8);
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    _conn = false;
+                    NoSuchHost?.Invoke(this, new EventArgs());
+                    return false;
+                }
             }
+            return true;
         }
         public void SetupConn()  // Setup connection and login
         {
             
-            InitStuff();
+            if (!InitStuff())
+            {
+                return;
+            }
             try
             {
 
@@ -224,14 +238,17 @@ namespace Messenger_Client
         {
             return true; // Allow untrusted certificates.
         }
-        void CloseConn() // Close connection.
+        public void CloseConn() // Close connection.
         {
-            br.Close();
-            bw.Close();
-            ssl.Close();
-            netStream.Close();
-            client.Close();
-            _conn = false;
+            if (_conn)
+            {
+                br.Close();
+                bw.Close();
+                ssl.Close();
+                netStream.Close();
+                client.Close();
+                _conn = false;
+            }
         }
         void Reciever()
         {

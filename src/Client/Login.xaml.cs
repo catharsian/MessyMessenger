@@ -21,17 +21,25 @@ namespace Messenger_Client
     /// </summary>
     public partial class Login : Window
     {
-        public MesClient cl;
         MainWindow wind;
         private readonly Object _lock = new Object();
         private bool pressed = true;
-
-        public Login()
+        MainWindow parent;
+        private bool IsNonCloseButtonClick = false;
+        public Login(MainWindow caller)
         {
-            cl = new MesClient();
             InitializeComponent();
-
-            cl.RegisterFailed += (obj, e) =>
+            parent = caller;
+            parent.cl.NoSuchHost += (sender, e) =>
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    pressed = true;
+                    ErrLabel.Foreground = Brushes.DarkRed;
+                    ErrLabel.Text = "Error. Server not available.";
+                });
+            };
+            parent.cl.RegisterFailed += (obj, e) =>
             {
                 Dispatcher.Invoke(() =>
                 {
@@ -40,7 +48,7 @@ namespace Messenger_Client
                     ErrLabel.Text = "Error. " + ErrToStr(e.Error);
                 });
             };
-            cl.LoginFailed += (obj, e) =>
+            parent.cl.LoginFailed += (obj, e) =>
             {
                 Dispatcher.Invoke(() =>
                 {
@@ -49,38 +57,30 @@ namespace Messenger_Client
                     ErrLabel.Text = "Error. " + ErrToStr(e.Error);
                 });
             };
-
-            cl.LoginOK += (obj, e) =>
+            parent.cl.LoginOK += (sender, e) =>
             {
-                Dispatcher.Invoke(() => { 
-                Thread newThread = new Thread(new ThreadStart(() =>
-                {
-                    wind = new MainWindow(this);
-                    wind.Show();
-                    System.Windows.Threading.Dispatcher.Run();
-                }));
-                newThread.SetApartmentState(ApartmentState.STA);
-                newThread.IsBackground = true;
-                newThread.Start();
-                Dispatcher.Invoke(() => this.FullyHide());
-                });
-                
-
-            };
-            cl.Disconnected += (obj, e) =>
-            {
+                IsNonCloseButtonClick = true;
                 Dispatcher.Invoke(() =>
                 {
-                    pressed = true;
-
-                    FullyShow();
-                    ErrLabel.Foreground = Brushes.DarkRed;
-                    ErrLabel.Text = "Error. You got disconnected";
+                    parent.Connect();
+                    this.Close();
                 });
+            };
+            this.Closing += (sender, e) =>
+            {
+                if (IsNonCloseButtonClick)
+                {
+                    return;
+                }
+                else
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        parent.Close();
+                    });
+                }
             };
         }
-       
-
         public void OnTxtBoxInput(object sender, EventArgs e)
         {
             if (sender == passwordtxtbox)
@@ -101,7 +101,7 @@ namespace Messenger_Client
                 pressed = false;
                 ErrLabel.Foreground = Brushes.Blue;
                 ErrLabel.Text = "Connecting...";
-                cl.Login(usernametxtbox.Text, passwordtxtbox.Text);
+                parent.cl.Login(usernametxtbox.Text, passwordtxtbox.Text);
 
             }
         }
@@ -112,7 +112,7 @@ namespace Messenger_Client
                 pressed = false;
                 ErrLabel.Foreground = Brushes.Blue;
                 ErrLabel.Text = "Connecting...";
-                cl.Register(usernametxtbox.Text, passwordtxtbox.Text);
+                parent.cl.Register(usernametxtbox.Text, passwordtxtbox.Text);
             }
         }
         private static string ErrToStr(ClError err)

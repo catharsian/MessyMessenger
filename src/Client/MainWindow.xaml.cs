@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Threading;
 
 namespace Messenger_Client
 {
@@ -20,14 +21,19 @@ namespace Messenger_Client
     /// </summary>
     public partial class MainWindow : Window
     {
-        Login parent;
-        public MainWindow(Login wind)
+        public MesClient cl;
+        public List<Chat> chatList = new List<Chat>();
+        private Dictionary<string, int> notifsCount = new Dictionary<string, int>();
+        public Dictionary<string, List<string> > chats = new Dictionary<string, List<string> >();
+        public MainWindow()
         {
-
+            cl = new MesClient();
             InitializeComponent();
-            this.parent = wind;
-
-            parent.cl.GotUsersOnline += (sender, e) =>
+            Show();
+            IsEnabled = false;
+            Start_Chatting.IsEnabled = false;
+            CreateLogin(false);
+            cl.GotUsersOnline += (sender, e) =>
              {
                  Dispatcher.Invoke(() =>
                  {
@@ -41,75 +47,97 @@ namespace Messenger_Client
                  });
 
 
-                 foreach (string user in parent.cl.UsersOnline)
+                 foreach (string user in cl.UsersOnline)
                  {
+                     if (!chats.ContainsKey(user))
+                     {
+                         chats[user] = new List<string>();
+                     }
+                     if (!notifsCount.ContainsKey(user))
+                     {
+                         notifsCount[user] = 0;
+                     }
                      Dispatcher.Invoke(() =>
                      {
-                         
-                         TextBlock newBlock = new TextBlock();
-                         newBlock.Text = user;
-                         newBlock.PreviewMouseDown += (sender, e) =>
-                          {
-                              chatWith.Text = newBlock.Text;
-                          };
-                         OnlineUsersList.Items.Add(newBlock);
+                         Grid grid = new Grid();
+                         var first = new ColumnDefinition();
+                         var second = new ColumnDefinition();
+                         first.Width = new GridLength(2.0, GridUnitType.Star);
+                         second.Width = new GridLength(1.0, GridUnitType.Star);
+                         grid.ColumnDefinitions.Add(first);
+                         grid.ColumnDefinitions.Add(second);
+                         TextBlock newBlock = new TextBlock
+                         {
+                             Text = user,
+                             Name = "UserName",
+                             Style = (Style)Resources["mIRC_Font"]
+                         };
+                         TextBlock notif = new TextBlock
+                         {
+                             Name = "Notif",
+                             Text = GetNotifCorrectly(notifsCount[user]),
+                             Style = (Style)Resources["mIRC_Font"]
+                         };
+                         Grid.SetColumn(newBlock, 0);
+                         Grid.SetColumn(notif, 1);
+                         grid.Children.Add(newBlock);
+                         grid.Children.Add(notif);
+                         OnlineUsersList.Items.Add(grid);
 
                      });
                  }
+                 Dispatcher.Invoke(() =>
+                 {
+                     if (cl.UsersOnline.Count == 0)
+                     {
+                         Start_Chatting.IsEnabled = false;
+                     }
+                     else
+                     {
+                     
+                         Start_Chatting.IsEnabled = true;
+                         OnlineUsersList.SelectedIndex = 0;
+                     }
+                 });
              };
 
-            parent.cl.Disconnected += (sender, e) =>
+            cl.Disconnected += WhenDisconnected;
+            this.Closing += (sender, e) =>
             {
-                Dispatcher.Invoke(() =>
-                {
-                    parent.Show();
-                    parent.ErrLabel.Text = "You got disconnected";
-                    this.Close();
-                });
+                cl.Disconnected -= WhenDisconnected;
+                cl.CloseConn();
+                App.Current.Shutdown();
             };
-            parent.cl.UserAvailable += (sender, e) =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    if (e.IsAvailable)
-                    {
-                        chatWith.Text = e.UserName;
-                    }
-                    else
-                    {
-                        chatWith.Text = "No one";
-                    }
-                });
-            };
-            parent.cl.MessageReceived += (obj, e) =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    var newItem = new TextBlock();
-                    newItem.Text = $"You <- {e.From}: {e.Message}";
-
-                    msgs.Items.Add(newItem);
-                });
-            };
-            
+            cl.MessageReceived += GotMessage;
         }
-        public void OnTxtBoxInput(object sender, RoutedEventArgs e)
+        private string GetNotifCorrectly(int count)
         {
-            Notify.Visibility = Visibility.Hidden;
-            TypedTxt.TextChanged -= OnTxtBoxInput;
-        }
-        public void sendMessage(object sender, RoutedEventArgs e)
-        {
-            if (chatWith.Text.ToLower() != "all")
+            if (count == 0)
             {
-                var mymsg = new TextBlock();
-                mymsg.Text = $"You -> {parent.cl.userName}: {TypedTxt.Text}";
-                msgs.Items.Add(mymsg);
+                return "";
             }
-
-            parent.cl.SendMessage(chatWith.Text, TypedTxt.Text);
-
-            TypedTxt.Text = "";
+            else
+            {
+                return count + " new msgs";
+            }
+        }
+        private void WhenDisconnected(object sender, EventArgs e)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                CreateLogin(true);
+            });
+        }
+        private void MakeChat(object sender, RoutedEventArgs e)
+        {
+            Dispatcher.Invoke(() => {
+                CreateChat();
+            });
+        }
+        public void Connect()
+        {
+            IsEnabled = true;
+            TopTextBlock.Text = $"Hello, {cl.userName}! Here are users online:";
         }
         public void FullyHide()
         {
@@ -123,10 +151,91 @@ namespace Messenger_Client
         }
         public void CloseAll(object sender, EventArgs e)
         {
-            Dispatcher.Invoke(() => parent.Close());
             this.Close();
         }
-    }
+        private void CreateLogin(bool disc)
+        {
+            //Dispatcher.Invoke(() =>
+            //{
+            //    Thread thread = new Thread(new ThreadStart(() =>
+            //    {
+            //        Login login = new Login(this);
+            //        login.Owner = this;
+            //        login.Show();
+            //        login.ErrLabel.Text = "You got disconnected";
+            //        System.Windows.Threading.Dispatcher.Run();
+            //    }));
+            //    thread.SetApartmentState(ApartmentState.STA);
+            //    thread.IsBackground = true;
+            //    thread.Start();
+            //});
+            IsEnabled = false;
+            Login login = new Login(this);
+            if (disc)
+            {
+                login.ErrLabel.Text = "You got disconnected";
+            }
+            login.Owner = this;
+            login.Show();
+        }
+        private void CreateChat()
+        {
+            string to = ((TextBlock)(((Grid)OnlineUsersList.SelectedItem).Children[0])).Text;
+            SetNotifTo0(to);
 
+            Chat chat = new Chat(
+                cl.userName, to, this)
+            {
+                Owner = this
+            };
+            chat.Show();
+            chatList.Add(chat);
+            foreach (var message in chats[to])
+            {
+                chat.CreateMessage(message);
+            }
+        }
+        private void SetNotifTo0(string user)
+        {
+            notifsCount[((TextBlock)(((Grid)OnlineUsersList.SelectedItem).Children[0])).Text] = 0;
+            foreach (Grid gr in OnlineUsersList.Items)
+            {
+                if (((TextBlock)(gr.Children[0])).Text == user)
+                {
+                    ((TextBlock)gr.Children[1]).Text = "";
+                }
+            }
+        }
+        private void GotMessage(object sender, MesReceivedEventArgs e)
+        {
+            bool found = false;
+            foreach (Chat c in chatList)
+            {
+                if (c.who == e.From)
+                {
+                    found = true;
+                    Dispatcher.Invoke(() =>
+                    {
+                        c.CreateMessage(c.who, e.Message);
+                    });
+                }
+            }
+            if (!found)
+            {
+                notifsCount[e.From] += 1;
+                chats[e.From].Add($"<{e.From}>: {e.Message}");
+                foreach (Grid g in OnlineUsersList.Items)
+                {
+                    Dispatcher.Invoke(() =>
+                    {
+                        if (((TextBlock)g.Children[0]).Text == e.From)
+                        {
+                            ((TextBlock)g.Children[1]).Text = GetNotifCorrectly(notifsCount[e.From]);
+                        }
+                    });
+                }
+            } 
+        }
+    }
 }
 
