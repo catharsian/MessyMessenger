@@ -27,7 +27,7 @@ namespace Messenger_Server
 
         public Dictionary<string, UserInfo> users;
 
-        public const int IM_HELLO = 2021;
+        public const int  IM_HELLO = 2021;
         public const byte IM_OK = 0;           // OK
         public const byte IM_Login = 1;        // Login
         public const byte IM_Register = 2;     // Register
@@ -41,8 +41,6 @@ namespace Messenger_Server
         public const byte IM_Send = 10;        // Send message
         public const byte IM_Received = 11;    // Message received
 
-
-
         public Server()
         {
             
@@ -53,19 +51,25 @@ namespace Messenger_Server
             ip = new IPAddress(addr);
             server = new TcpListener(ip, port);
             server.Start();
-
-            Listen();
         }
-        void Listen()
+        public void TryToStop()
+        {
+            server.Stop();
+            running = false;
+        }
+
+        public async Task<object> ListenAsync()
         {
             while (running)
             {
-                TcpClient tcpClient = server.AcceptTcpClient();
+                TcpClient tcpClient = await server.AcceptTcpClientAsync();
                 Console.WriteLine("Someone's connecting...");
                 Client client = new Client(this, tcpClient);
 
             }
+            return null;
         }
+        
         string usersFileName = Environment.CurrentDirectory + "\\users.dat";
         public void SaveUsers()  // Save users data
         {
@@ -266,6 +270,7 @@ namespace Messenger_Server
                         case Mes_Send:
                             var to  = br.ReadString();
                             var msg = br.ReadString();
+                            Console.WriteLine($"{userInfo.UserName} to {to}: {msg}");
                             if (to.ToLower() == "all")
                                 SendAll(msg, userInfo.UserName);
                             else
