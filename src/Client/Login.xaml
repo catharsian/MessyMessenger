@@ -12,11 +12,14 @@
             
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
+            <RowDefinition Height="20"/>
             <RowDefinition Height="1*"/>
             <RowDefinition Height="1*"/>
             <RowDefinition Height="1*"/>
         </Grid.RowDefinitions>
-        <Label Name="usernamelabel" Content="Username" Grid.Row="0"  IsHitTestVisible="False" Width="280" FontFamily="Times New Roman" FontSize="24" >
+        <TextBlock Name="ipblocklabel" Text="Server's IP" Grid.Row="0" VerticalAlignment="Top" IsHitTestVisible="False" FontSize="18" Foreground="Black"/>
+        <TextBox Name="ipBox" Text="127.0.0.1:25665" Grid.Row="0" FontSize="18" Background="{x:Null}" VerticalAlignment="Top" TextChanged="OnIPBoxTextInput" />
+        <Label Name="usernamelabel" Content="Username" Grid.Row="1"  IsHitTestVisible="False" Width="280" FontFamily="Times New Roman" FontSize="24" >
             <Label.Foreground>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="#FF139706"/>
@@ -24,7 +27,7 @@
                 </LinearGradientBrush>
             </Label.Foreground>
         </Label>
-        <Label Name="passwordlabel" Content="Password" Grid.Row="1" IsHitTestVisible="False" Width="280" FontFamily="Times New Roman" FontSize="24" >
+        <Label Name="passwordlabel" Content="Password" Grid.Row="2" IsHitTestVisible="False" Width="280" FontFamily="Times New Roman" FontSize="24" >
             <Label.Foreground>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="#FF139706"/>
@@ -32,9 +35,9 @@
                 </LinearGradientBrush>
             </Label.Foreground>
         </Label>
-        <TextBox Name="passwordtxtbox" Grid.Row="1" FontFamily="Times New Roman" FontSize="24" TextChanged="OnTxtBoxInput" Background="{x:Null}"/>
-        <TextBox Name="usernametxtbox" Grid.Row="0" FontFamily="Times New Roman" FontSize="24" TextChanged="OnTxtBoxInput" Background="{x:Null}" />
-        <Grid Grid.Row="2">
+        <TextBox Name="passwordtxtbox" Grid.Row="2" FontFamily="Times New Roman" FontSize="24" TextChanged="OnTxtBoxInput" Background="{x:Null}"/>
+        <TextBox Name="usernametxtbox" Grid.Row="1" FontFamily="Times New Roman" FontSize="24" TextChanged="OnTxtBoxInput" Background="{x:Null}" />
+        <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1*"/>
                 <ColumnDefinition Width="1*"/>

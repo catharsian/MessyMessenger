@@ -71,6 +71,14 @@ namespace Messenger_Client
         public event EventHandler GotUsersOnline;
         public event EventHandler NoSuchHost;
         private List<string> _users;
+
+        public MesClient()
+        {
+
+        }
+
+        public IPEndPoint ip;
+
         public  List<string> UsersOnline 
         {
             get
@@ -79,19 +87,6 @@ namespace Messenger_Client
             }
         }
 
-        public string Server
-        {
-            get {
-                return "127.0.0.1";
-            } 
-        }
-        public int Port 
-        { 
-            get
-            {
-                return 25665;
-            } 
-        }
         public bool isLogged 
         {
             get
@@ -146,7 +141,7 @@ namespace Messenger_Client
                 try
                 {
                     _conn = true;
-                    client = new TcpClient(Server, Port);
+                    client = new TcpClient(ip.Address.ToString(), ip.Port);
                     netStream = client.GetStream();
                     ssl = new SslStream(netStream, false, new RemoteCertificateValidationCallback(ValidateCert));
                     ssl.AuthenticateAsClient("Messenger Server");
@@ -154,7 +149,7 @@ namespace Messenger_Client
                     bw = new BinaryWriter(ssl, Encoding.UTF8);
                     return true;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     _conn = false;
                     NoSuchHost?.Invoke(this, new EventArgs());

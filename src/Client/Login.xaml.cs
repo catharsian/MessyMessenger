@@ -81,6 +81,19 @@ namespace Messenger_Client
                 }
             };
         }
+        public void OnIPBoxTextInput(object sender, EventArgs e)
+        {
+            var s = (TextBox)sender;
+            if (s.Text != "")
+            {
+                ipblocklabel.Visibility = Visibility.Hidden;
+            }
+            else
+            {
+                ipblocklabel.Visibility = Visibility.Visible;
+            }
+        }
+
         public void OnTxtBoxInput(object sender, EventArgs e)
         {
             if (sender == passwordtxtbox)
@@ -98,6 +111,17 @@ namespace Messenger_Client
         {
             if (pressed)
             {
+                try
+                {
+                    parent.cl.ip = System.Net.IPEndPoint.Parse(ipBox.Text);
+                }
+                catch (FormatException ex)
+                {
+                    ErrLabel.Foreground = Brushes.Red;
+                    ErrLabel.Text = "Server's IP is incorrectly formatted";
+                    return;
+                }
+                ipBox.Text = parent.cl.ip.ToString();
                 pressed = false;
                 ErrLabel.Foreground = Brushes.Blue;
                 ErrLabel.Text = "Connecting...";
@@ -109,6 +133,16 @@ namespace Messenger_Client
         {
             if (pressed)
             {
+                try
+                {
+                    parent.cl.ip = System.Net.IPEndPoint.Parse(ipBox.Text);
+                }
+                catch (FormatException ex)
+                {
+                    ErrLabel.Foreground = Brushes.Red;
+                    ErrLabel.Text = "Server's IP is incorrectly formatted";
+                    return;
+                }
                 pressed = false;
                 ErrLabel.Foreground = Brushes.Blue;
                 ErrLabel.Text = "Connecting...";

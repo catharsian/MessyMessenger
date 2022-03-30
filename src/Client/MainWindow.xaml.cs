@@ -76,12 +76,15 @@ namespace Messenger_Client
                          {
                              Name = "Notif",
                              Text = GetNotifCorrectly(notifsCount[user]),
-                             Style = (Style)Resources["mIRC_Font"]
+                             Style = (Style)Resources["mIRC_Font"],
+                             
                          };
+                         
                          Grid.SetColumn(newBlock, 0);
                          Grid.SetColumn(notif, 1);
                          grid.Children.Add(newBlock);
                          grid.Children.Add(notif);
+                         grid.MouseDown += ListUserMouseDownHandler;
                          OnlineUsersList.Items.Add(grid);
 
                      });
@@ -109,6 +112,14 @@ namespace Messenger_Client
                 App.Current.Shutdown();
             };
             cl.MessageReceived += GotMessage;
+        }
+
+        private void ListUserMouseDownHandler(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2)
+            {
+                CreateChat();
+            }
         }
         private string GetNotifCorrectly(int count)
         {
