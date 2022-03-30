@@ -20,9 +20,8 @@ namespace Messenger_Server
     public class Server
     {
         public TcpListener server;
-        public IPAddress ip;
-        public int port = 25665;
-        public bool running = true;
+        public IPEndPoint ip;
+        public bool running = false;
         public X509Certificate2 cert = new X509Certificate2("server.pfx", "instant");
 
         public Dictionary<string, UserInfo> users;
@@ -40,31 +39,87 @@ namespace Messenger_Server
         public const byte IM_Available = 9;    // User is available or not
         public const byte IM_Send = 10;        // Send message
         public const byte IM_Received = 11;    // Message received
-
+        public const string AllCommandsHelp = "Commands list:\n" +
+            "kick name - kicks name from the server\n" +
+            "stop - pauses the server\n" +
+            "start - resumes the server\n" +
+            "cancel - aborts the server\n" +
+            "setip ip1 - changes servers ip to ip1 (example: setip 127.0.0.1:6868)\n" +
+            "viewip - prints your current ip";
+        CancellationTokenSource cancellation;
+        public bool started = false;
         public Server()
         {
             
             Console.WriteLine("---------Messenger Server initializization---------");
+            Console.WriteLine(AllCommandsHelp);
+            Console.WriteLine("Please set ip(use setip) and start(use start) server.");
+            Console.WriteLine("Default ip: 127.0.0.1:25665");
             users = new Dictionary<string, UserInfo>();
             LoadUsers();
-            byte[] addr = { 127,0,0,1 };
-            ip = new IPAddress(addr);
-            server = new TcpListener(ip, port);
-            server.Start();
+        
         }
-        public void TryToStop()
+        public void ChangeIP(IPEndPoint ip)
         {
-            server.Stop();
-            running = false;
+            PauseServer();
+            this.ip = ip;
         }
+        public void PauseServer()
+        {
+            if (!started) return;
+            running = false;
+            cancellation.Cancel();
+            
+            server.Stop();
+            server = null;
+            Console.WriteLine("Server has been paused.");
+        }
+        public void ContinueServer()
+        {
+            if (ip == null)
+            {
+                ip = IPEndPoint.Parse("127.0.0.1:25665");
+            }
+            if (!running)
+            {
+                cancellation = new CancellationTokenSource();
+                server = new TcpListener(ip);
+                server.Start();
+                cancellation.Token.Register(() => server.Stop());
+                started = true;
+                running = true;
 
+                Console.WriteLine("Server has been started.");
+                ListenAsync();
+            }
+        }
+        public void DisconnectAll()
+        // Has to be used in stopping but it seems like an intersting feature
+        // if you don't disconnect all after server pauses
+        {
+            foreach (var user in users.Values)
+            {
+                if (user.LoggedIn)
+                {
+                    user.DisconnectMe();
+                }
+            }
+        }
+        public string ViewIP()
+        {
+            if (ip != null)
+                return $"{ip}";
+            else
+                return "IP not set";
+        }
         public async Task<object> ListenAsync()
         {
             while (running)
             {
-                TcpClient tcpClient = await server.AcceptTcpClientAsync();
+                var tcps = await Task.Run(() =>
+                   server.AcceptTcpClientAsync(), cancellation.Token);
                 Console.WriteLine("Someone's connecting...");
-                Client client = new Client(this, tcpClient);
+                Client client = new Client(this, tcps);
 
             }
             return null;
@@ -96,6 +151,17 @@ namespace Messenger_Server
                 users = infos.ToDictionary((u) => u.UserName, (u) => u);  // Convert UserInfo array to Dictionary
             }
             catch { }
+        }
+        public UserInfo? getUser(string name)
+        {
+            foreach (UserInfo user in users.Values)
+            {
+                if (user.UserName == name)
+                {
+                    return user;
+                }
+            }
+            return null;
         }
 
     }
@@ -371,7 +437,11 @@ namespace Messenger_Server
         [NonSerialized]public bool LoggedIn;
         [NonSerialized]public Client Connection;
         
-
+        public void DisconnectMe()
+        {
+            LoggedIn = false;
+            Connection.CloseConn();
+        }
         public UserInfo(string user, string password)
         {
             this.Password = password;
